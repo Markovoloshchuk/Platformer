@@ -1,4 +1,5 @@
--- entities/level.lua
+local NPC = require("entities.npc")
+
 local Level = {}
 
 function Level.load()
@@ -11,6 +12,7 @@ function Level.load()
 
     Level.platforms = {}
     Level.spikes = {}
+    Level.npcs = {}
 
     -- Хелпери
     local function spawnPlatform(x, y, w, h,  type)
@@ -18,6 +20,10 @@ function Level.load()
     end
     local function spawnSpike(x, y)
         table.insert(Level.spikes, {x = x, y = y, width = 50, height = 50})
+    end
+    local function spawnNPC(x, y, dialogue)
+        local new_npc = NPC.new(x, y, dialogue)
+        table.insert(Level.npcs, new_npc) -- <--- Кладемо NPC в "кишеню" рівня
     end
 
     -- Будуємо рівень
@@ -30,6 +36,14 @@ function Level.load()
     spawnPlatform(400, -50, 150, 25, "platform")
     spawnPlatform(150, -200, 150, 25, "platform")
     spawnPlatform(400, -350, 150, 25, "platform")
+
+    -- Спавнимо PewPaw
+    spawnNPC(150, 300, {
+        "PewPaw",
+        "Watch out for those spikes",
+        "They are prickly for sure!",
+        "Meow"
+    })
 end
 
 function Level.draw()
