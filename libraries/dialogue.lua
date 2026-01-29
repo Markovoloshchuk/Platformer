@@ -6,7 +6,6 @@ local Dialogue = {}
 -- ПРИВАТНІ ЗМІННІ
 -- =================================================
 
-local gameFont = nil
 local dialog_window = {}
 local texts = {}
 local target_text = ""
@@ -22,6 +21,7 @@ local is_upper = false
 -- =================================================
 
 Dialogue.isActive = false 
+Dialogue.gameFont = 24
 
 -- =================================================
 -- ЛОКАЛЬНІ ДОПОМІЖНІ ФУНКЦІЇ

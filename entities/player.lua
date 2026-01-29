@@ -110,13 +110,26 @@ end
 
     -- Шипи (Проста перевірка AABB)
     for _, s in ipairs(levelData.spikes) do
-        if Player.x < s.x + s.width - 20 and
-           Player.x + Player.width > s.x + 10 and
-           Player.y < s.y + s.height - 20 and
-           Player.y + Player.height > s.y + 20 then
+       local margin_x = 15 -- Звужуємо з боків, щоб не вбивало об самі куточки
+        local margin_y = 10 -- Зрізаємо верхівку, щоб не вбивало об гострий піксель
+
+        -- Координати хітбокса шипа
+        local spike_left   = s.x + margin_x
+        local spike_right  = s.x + s.width - margin_x
+        local spike_top    = s.y - s.height + margin_y -- Верх (трохи нижче піка)
+        local spike_bottom = s.y                       -- Низ (земля)
+
+        -- Перевірка AABB (Axis-Aligned Bounding Box)
+        if Player.x < spike_right and
+           Player.x + Player.width > spike_left and
+           Player.y < spike_bottom and
+           Player.y + Player.height > spike_top then
+            
             -- Респаун
-            Player.x, Player.y = 100, 100
+            Player.x, Player.y = 50, 400
             Player.y_velocity = 0
+            
+            -- (Опціонально) Ефект тряски екрану або звук
         end
     end
 

@@ -1,29 +1,34 @@
 -- states/game.lua
 local Game = {}
 
--- Підключаємо сутності
 local Player = require("entities.player")
 local Camera = require("entities.camera")
-local Level = require("entities.level")
+-- Переконайся, що в цих файлах є 'return Level1' і 'return Level2' в кінці!
+local Level1 = require("levels.level_1") 
+local Level2 = require("levels.level_2") 
 local Dialogue = require("libraries.dialogue")
 
 function Game.load()
     Dialogue.load()
+    local gameFont = love.graphics.newFont(24)
+    love.graphics.setFont(gameFont)
     
-    -- Ініціалізуємо рівень (межі, платформи, NPC)
-    Level.load()
-    
-    -- Ініціалізуємо гравця (передаємо координати старту)
-    Player.load(100, 100)
-    
-    -- Тексти для діалогу
-    Game.dialogueText = {
-        "System initiated...",
-        "Modular architecture loaded.",
-        "Welcome to organized code."
-    }
+    -- Запускаємо гру з 1-го рівня
+    Game.switchLevel(1)
+end
 
-
+function Game.switchLevel(number)
+    Game.levelNumber = number
+    
+    if number == 1 then
+        Game.current_level = Level1.load()
+        Player.load(100, 300) -- Старт для Рівня 1
+    elseif number == 2 then
+        Game.current_level = Level2.load()
+        Player.load(100, 300) -- Старт для Рівня 2
+    else
+        print("Level " .. number .. " does not exist!")
+    end
 end
 
 function Game.update(dt)
@@ -32,35 +37,27 @@ function Game.update(dt)
         return
     end
 
-    -- 1. Оновлюємо гравця (передаємо йому дані про рівень для колізій!)
-    Player.update(dt, Level)
+    Player.update(dt, Game.current_level)
+    Game.current_level:update(dt, Player)
 
-    for _, npc in ipairs(Level.npcs) do 
-        npc:update(dt, Player)
+    Camera.update(Player, Game.current_level.boundaries)
+    
+    -- Перехід на наступний рівень
+    if Player.x > Game.current_level.boundaries.width - 50 then
+        Game.switchLevel(Game.levelNumber + 1)
     end
-
-    -- 2. Оновлюємо камеру (щоб вона стежила за гравцем)
-    Camera.update(Player, Level.boundaries)
 end
 
 function Game.draw()
     love.graphics.setBackgroundColor(0.4, 0.6, 1)
 
-    -- Вмикаємо камеру
     Camera.set()
-        Level.draw()  -- Малюємо світ
-
-        for _, npc in ipairs(Level.npcs) do 
-            npc:draw()
-        end
-
-        Player.draw() -- Малюємо гравця
-        
+        Game.current_level:draw() -- Малює платформи, шипи і NPC
+        Player.draw()
     Camera.unset()
 
-    -- Інтерфейс (поверх камери)
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print("FPS: " .. love.timer.getFPS(), 10, 10)
+    love.graphics.print("Level: " .. (Game.levelNumber or 1), 10, 10)
     
     Dialogue.draw()
 end
@@ -73,20 +70,25 @@ function Game.keypressed(key)
         return
     end
 
-    -- Передаємо керування гравцю
     Player.keypressed(key)
 
     if key == "z" or key == "return" then
-        print("Button Z pressed")
-        for _, npc in ipairs(Level.npcs) do
-            if npc.is_player_near then
-                npc:interact()
-                break -- Якщо знайшли одного, з іншими не говоримо одночасно
+        -- !!! ВИПРАВЛЕННЯ ДЛЯ NPC !!!
+        -- 1. Шукаємо в Game.current_level.npcs (а не Level.npcs)
+        -- 2. Використовуємо правильну назву змінної: is_player_near
+        
+        if Game.current_level and Game.current_level.npcs then
+            for _, npc in ipairs(Game.current_level.npcs) do
+                if npc.is_player_near then
+                    npc:interact()
+                    break 
+                end
             end
         end
     end
 end
 
+-- Те саме виправлення для геймпада
 function Game.gamepadpressed(joystick, button)
     if Dialogue.isActive then
         if button == "a" then Dialogue.keypressed("space") end
@@ -96,10 +98,12 @@ function Game.gamepadpressed(joystick, button)
     Player.gamepadpressed(button)
 
     if button == "start" or button == "y" then
-         for _, npc in ipairs(Level.npcs) do
-            if npc.is_player_near then
-                npc:interact()
-                break -- Якщо знайшли одного, з іншими не говоримо одночасно
+        if Game.current_level and Game.current_level.npcs then
+             for _, npc in ipairs(Game.current_level.npcs) do
+                if npc.is_player_near then
+                    npc:interact()
+                    break 
+                end
             end
         end
     end
