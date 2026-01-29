@@ -16,6 +16,12 @@ function Level1.load()
     level:spawnSpike(400, 450)
     
     level:spawnNPC(150, 290, {"Welcome to Level 1", "Don't die!"})
+    level:spawnNPC(1700, 440, {
+        "Go right into the red zone!",
+        "Worry not, it will just traverse you into the next level"
+    })
+
+    level:spawnTransition(1990, -100, 10, 700, 2, 50, 450)
 
     return level
 end

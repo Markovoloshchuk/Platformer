@@ -1,5 +1,5 @@
--- entities/base_level.lua
 local NPC = require("entities.npc")
+local Transition = require("entities.events.transition")
 
 local BaseLevel = {}
 BaseLevel.__index = BaseLevel
@@ -11,6 +11,8 @@ function BaseLevel:new()
     instance.platforms = {}
     instance.spikes = {}
     instance.npcs = {}
+    instance.events = {}
+
     instance.boundaries = { width = 2000, top_limit = -1000, bottom_limit = 1000 }
     instance.ground_y = 500
     
@@ -31,11 +33,23 @@ function BaseLevel:spawnNPC(x, y, dialogue)
     table.insert(self.npcs, npc)
 end
 
+function BaseLevel:spawnTransition(x, y, w, h, target_level, to_x, to_y)
+    local trans = Transition:new(x, y, w, h, target_level, to_x, to_y)
+    table.insert(self.events, trans)
+    
+end
+
 -- === СПІЛЬНА ЛОГІКА ===
-function BaseLevel:update(dt, player)
+function BaseLevel:update(dt, player, game_ref)
     -- Оновлюємо всіх NPC рівня
     for _, npc in ipairs(self.npcs) do
         npc:update(dt, player)
+    end
+
+    for _, event in ipairs(self.events) do
+        if event:check_collision(player) then
+            event:trigger(game_ref, player)
+        end
     end
 end
 
@@ -64,6 +78,10 @@ function BaseLevel:draw()
     -- Малюємо NPC
     for _, npc in ipairs(self.npcs) do
         npc:draw()
+    end
+
+    for _, event in ipairs(self.events) do
+        event:draw()
     end
 end
 
