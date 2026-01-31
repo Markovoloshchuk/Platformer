@@ -7,7 +7,97 @@ function Player.load(x, y)
     Player.width = 50
     Player.height = 50
     Player.speed = 400
+
+    Player.active_keys = {
+        left = love.keyboard.isScancodeDown("a"),
+        right = love.keyboard.isScancodeDown("d")
+    }
+
+
+    -- Graphic
+
+    local w = Player.width
+    local h = Player.height
+
+    -- Коефіцієнти для ширини "свердл" (щоб зручно міняти)
+    local s1_w = w * 0.6  -- Ширина верхньої секції
+    local s2_w = w * 0.5  -- Ширина середньої
+    local s3_w = w * 0.35 -- Ширина нижньої
+
+    -- Координати Y для стиків (розподіляємо по висоті гравця)
+    local y_top = h * 0.1
+    local y_s1  = h * 0.4   -- Де закінчується 1-а пружинка
+    local y_s2  = h * 0.7   -- Де закінчується 2-а пружинка
+    local y_bot = h         -- Де закінчується 3-я (РІВНО НА ЗЕМЛІ)
+
+    local outline = {
+        -- === ВЕРХ ГОЛОВИ ===
+        0, 0,
+        w, 0,
+        
+        -- === ПРАВЕ СВЕРДЛО (Звужується донизу) ===
+        
+        -- Секція 1 (Верхня - найширша)
+        w,          y_top,
+        w + s1_w,   y_top,
+        w + s1_w,   y_s1,
+        w + s1_w/2, y_s1,   -- "Талія" всередину
+        
+        -- Секція 2 (Середня - вужча)
+        w + s2_w,   y_s1 + 2, -- +2 пікселі для візуального накладання
+        w + s2_w,   y_s2,
+        w + s2_w/2, y_s2,
+        
+        -- Секція 3 (Нижня - найвужча, впирається в землю)
+        w + s3_w,   y_s2 + 2,
+        w + s3_w,   y_bot,    -- <--- Рівно по низу гравця (h)
+        w + s3_w/4, y_bot,    -- Гострий кінчик на землі
+        
+        -- Внутрішня сторона правого свердла (повертаємося до шиї)
+        w + s3_w/4, y_s2,     -- Йдемо вгору
+        w,          y_s1,     -- З'єднуємо з головою приблизно посередині
+        
+        -- === НИЗ ОБЛИЧЧЯ ===
+        w, h,
+        0, h,
+
+        -- === ЛІВЕ СВЕРДЛО (Дзеркально) ===
+        
+        -- Внутрішня сторона
+        0,          y_s1,
+        0 - s3_w/4, y_s2,
+        
+        -- Секція 3 (Нижня)
+        0 - s3_w/4, y_bot,
+        0 - s3_w,   y_bot,
+        0 - s3_w,   y_s2 + 2,
+        0 - s2_w/2, y_s2,     -- Талія
+        
+        -- Секція 2 (Середня)
+        0 - s2_w,   y_s2,
+        0 - s2_w,   y_s1 + 2,
+        0 - s1_w/2, y_s1,     -- Талія
+        
+        -- Секція 1 (Верхня)
+        0 - s1_w,   y_s1,
+        0 - s1_w,   y_top,
+        0,          y_top
+    }
+
+    -- === ТРІАНГУЛЯЦІЯ ===
+    local triangles = love.math.triangulate(outline)
     
+    local meshVertices = {}
+    local r, g, b, a = 1, 0, 0, 1 -- Червоний
+
+    for _, tri in ipairs(triangles) do
+        table.insert(meshVertices, {tri[1], tri[2], 0, 0, r, g, b, a})
+        table.insert(meshVertices, {tri[3], tri[4], 0, 0, r, g, b, a})
+        table.insert(meshVertices, {tri[5], tri[6], 0, 0, r, g, b, a})
+    end
+
+    Player.sprite = love.graphics.newMesh(meshVertices, "triangles")
+
     -- Фізика
     Player.y_velocity = 0
     Player.jump_force = -700
@@ -21,11 +111,12 @@ function Player.load(x, y)
     Player.coyote_timer = 0
 end
 
-function Player.update(dt, levelData)
+function Player.update(dt, levelData, game_ref)
     -- === 1. INPUT ===
     local input_strength = 0
-    if love.keyboard.isDown("right") then input_strength = 1 end
-    if love.keyboard.isDown("left") then input_strength = -1 end
+
+    if Player.active_keys.right then input_strength = 1 end
+    if Player.active_keys.left then input_strength = -1 end
 
     local joysticks = love.joystick.getJoysticks()
     if #joysticks > 0 then
@@ -63,12 +154,11 @@ for _, p in ipairs(levelData.platforms) do
        Player.y < p.y + p.height and Player.y + Player.height > p.y then
        
         -- ВАРІАНТ А: Це НАСКРІЗНА платформа (One-Way)
-        if p.type == "platform" then
-            local threshold = 12 -- Допуск трохи більший за швидкість падіння
-            local overlapY = (Player.y + Player.height) - p.y
+        if p.type == "platform" or p.type == "moving platform" then
+            local oldY = Player.y - (Player.y_velocity * dt)
             
             -- Ловимо, тільки якщо падаємо і торкаємося верху
-            if Player.y_velocity > 0 and overlapY > 0 and overlapY < threshold then
+            if Player.y_velocity > 0 and (oldY + Player.height) <= p.y + 2 then
                 Player.y = p.y - Player.height
                 Player.y_velocity = 0
                 Player.is_on_ground = true
@@ -126,7 +216,13 @@ end
            Player.y + Player.height > spike_top then
             
             -- Респаун
-            Player.x, Player.y = 50, 400
+            local respawn_x = game_ref.respawn_point.x or 50
+            local respawn_y = game_ref.respawn_point.y or 450
+
+            print("Player died. Respawn at " .. string.format("%.0f", respawn_x) .. "x, " .. string.format("%.0f", respawn_y) .. "y")
+
+            Player.x = respawn_x
+            Player.y = respawn_y
             Player.y_velocity = 0
             
             -- (Опціонально) Ефект тряски екрану або звук
@@ -142,13 +238,32 @@ end
 end
 
 function Player.draw()
-    love.graphics.setColor(1, 0, 0) -- Червоний гравець
-    love.graphics.rectangle("fill", Player.x, Player.y, Player.width, Player.height)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(Player.sprite, Player.x, Player.y)
 end
 
-function Player.keypressed(key)
+function Player.keypressed(key, scancode)
+    -- ДІАГНОСТИКА: покаже, що натиснуто
+    -- print("Key: " .. key .. " | Scancode: " .. scancode)
+
+    -- Використовуємо scancode для руху (ігнорує розкладку)
+    if scancode == "d" then
+        Player.active_keys.right = true
+    elseif scancode == "a" then
+        Player.active_keys.left = true
+    end
+
+    -- Стрибок (можна по key, бо space всюди однаковий)
     if key == "space" and Player.coyote_timer > 0 then
         Player.jump()
+    end
+end
+
+function Player.keyreleased(key, scancode)
+    if scancode == "d" then
+        Player.active_keys.right = false
+    elseif scancode == "a" then
+        Player.active_keys.left = false
     end
 end
 

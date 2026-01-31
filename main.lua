@@ -25,9 +25,15 @@ function love.draw()
     end
 end
 
-function love.keypressed(key)
+function love.keypressed(key, scancode)
     if currentState and currentState.keypressed then
-        currentState.keypressed(key)
+        currentState.keypressed(key, scancode)
+    end
+end
+
+function love.keyreleased(key, scancode)
+    if currentState and currentState.keyreleased then
+        currentState.keyreleased(key, scancode)
     end
 end
 

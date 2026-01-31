@@ -22,6 +22,8 @@ function Game.load()
         next_y = 0
     }
 
+    Game.respawn_point = {x = 0, y = 0}
+
     local w, h = love.graphics.getDimensions()
     local vertices = {
       -- X, Y,    U, V, R, G, B, A
@@ -57,7 +59,12 @@ function Game.changeLevelInstant(number, x, y)
         print("Level not found(")
     end
     
-    Player.load(x, y)
+    Player.load(x, Player.y or 450)
+
+    Game.respawn_point.x = x
+    Game.respawn_point.y = Player.y
+
+    print("New respawn point set at " .. string.format("%.0f", x) .. "x, " .. string.format("%.0f", y) .. "y.")
 end
 
 function Game.update(dt)    
@@ -94,8 +101,8 @@ function Game.update(dt)
         return
     end
 
-    if not Game.transition.active then
-        Player.update(dt, Game.current_level)
+    if not Game.transition.active and Game.transition.alpha < 0.2 then
+        Player.update(dt, Game.current_level, Game)
     end
     Game.current_level:update(dt, Player, Game)
     Camera.update(Player, Game.current_level.boundaries)
@@ -105,8 +112,8 @@ function Game.draw()
     love.graphics.setBackgroundColor(0.4, 0.6, 1)
 
     Camera.set()
-        Game.current_level:draw() -- Малює платформи, шипи і NPC
-        Player.draw()
+    Game.current_level:draw() -- Малює платформи, шипи і NPC
+    Player.draw()
     Camera.unset()
 
     love.graphics.setColor(1, 1, 1)
@@ -122,22 +129,23 @@ function Game.draw()
     end
 end
 
-function Game.keypressed(key)
-    if Game.transition.active then return end   
+function Game.keypressed(key, scancode)
+    -- Перехоплення системних клавіш
     if key == "escape" then love.event.quit() end
+
+    -- Якщо йде завантаження (темний екран), ігноруємо ввід для руху
+    if Game.transition.active and Game.transition.alpha > 0.6 then return end   
 
     if Dialogue.isActive then
         Dialogue.keypressed(key)
         return
     end
     
-    Player.keypressed(key)
+    -- ПЕРЕДАЄМО ОБИДВА ПАРАМЕТРИ
+    Player.keypressed(key, scancode)
 
-    if key == "z" or key == "return" then
-        -- !!! ВИПРАВЛЕННЯ ДЛЯ NPC !!!
-        -- 1. Шукаємо в Game.current_level.npcs (а не Level.npcs)
-        -- 2. Використовуємо правильну назву змінної: is_player_near
-        
+    -- Взаємодія через Scancode (працюватиме на будь-якій розкладці)
+    if scancode == "z" or key == "return" then
         if Game.current_level and Game.current_level.npcs then
             for _, npc in ipairs(Game.current_level.npcs) do
                 if npc.is_player_near then
@@ -149,9 +157,14 @@ function Game.keypressed(key)
     end
 end
 
+function Game.keyreleased(key, scancode)
+    -- Обов'язково передаємо в Player, щоб він міг зупинити рух
+    Player.keyreleased(key, scancode)
+end
+
 -- Те саме виправлення для геймпада
 function Game.gamepadpressed(joystick, button)
-    if Game.transition.active then return end
+    if Game.transition.active and Game.transition.alpha > 0.2 then return end
     if Dialogue.isActive then
         if button == "a" then Dialogue.keypressed("space") end
         return
