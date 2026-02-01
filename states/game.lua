@@ -8,6 +8,10 @@ local Level2 = require("levels.level_2")
 local Dialogue = require("libraries.dialogue")
 local Sounds = require("libraries.sounds")
 
+-- For collectables
+Game.loaded_levels = {}
+Game.score = 0
+
 function Game.load()
     Dialogue.load()
     local gameFont = love.graphics.newFont(24)
@@ -15,6 +19,7 @@ function Game.load()
 
     Sounds.load()
     Sounds.library.chillMusic:setVolume(0.1)
+    Sounds.library.chillMusic:setLooping(true)
     Sounds.playMusic("chillMusic")
 
     Game.transition = {
@@ -44,7 +49,10 @@ function Game.load()
 end
 
 function Game.switchLevel(number, x, y)
+    print("Switching to level " .. number)
+    print(Game.transition.active)
     if Game.transition.active then return end
+    print(Game.transition.active)
     
     Game.transition.active = true
     Game.transition.state = "out"
@@ -55,19 +63,26 @@ end
 
 function Game.changeLevelInstant(number, x, y)
     Game.levelNumber = number
+    print(number)
 
-    if number == 1 then
-        Game.current_level = Level1.load()
-    elseif number == 2 then
-        Game.current_level = Level2.load()
+    if not Game.loaded_levels[number] then
+        if number == 1 then
+            Game.loaded_levels[number] = Level1.load()
+        elseif number == 2 then
+            Game.loaded_levels[number] = Level2.load()
+        end
+        print("First time for level " .. number)
     else
-        print("Level not found(")
+        print("Level " .. number .. " already exists")
     end
+    
+
+    Game.current_level = Game.loaded_levels[number]
+    Game.current_level:resetEvents()
     
     Player.load(x, Player.y or 450)
 
-    Game.respawn_point.x = x
-    Game.respawn_point.y = Player.y
+    Game.respawn_point = {x = x, y = Player.y}
 
     print("New respawn point set at " .. string.format("%.0f", x) .. "x, " .. string.format("%.0f", y) .. "y.")
 end
@@ -120,6 +135,9 @@ function Game.draw()
     Game.current_level:draw() -- Малює платформи, шипи і NPC
     Player.draw()
     Camera.unset()
+
+    love.graphics.setColor(1, 1, 0)
+    love.graphics.print("Score: " .. Game.score, 10, 40)
 
     love.graphics.setColor(1, 1, 1)
     love.graphics.print("Coords: " .. string.format("%.0f", Player.x) .. ", " .. string.format("%.0f", Player.y), 10, 0)

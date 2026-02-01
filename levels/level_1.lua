@@ -40,7 +40,7 @@ function Level1.load()
     level:spawnSpike(600, -200, 100, 10)
     
     -- NPCs
-    level:spawnNPC(200, 290, {"Welcome to /0Level 1 /0", "Don't die!"}, {"speakDinner", 0.8, 1.0, false})
+    level:spawnNPC(200, 290, {"Welcome to /4Level 1 /0", "Don't die!"}, {"speakDinner", 0.8, 1.0, false})
     level:spawnNPC(700, 440, {
         "Go right into the /1red zone!",
         "Worry not, it will...",
@@ -51,6 +51,9 @@ function Level1.load()
 
     -- Transitions
     level:spawnTransition(990, -700, 10, 1200, 2, 50, 450)
+
+    -- Collectables
+    level:spawnCollectable(850, 120, "empty", 1) -- Для тесту помилки
 
     return level
 end

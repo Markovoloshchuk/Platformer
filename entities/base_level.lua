@@ -1,5 +1,6 @@
 local NPC = require("entities.npc")
 local Transition = require("entities.events.transition")
+local Collectable = require("entities.collectables")
 
 local BaseLevel = {}
 BaseLevel.__index = BaseLevel
@@ -11,6 +12,7 @@ function BaseLevel:new()
     instance.spikes = {}
     instance.npcs = {}
     instance.events = {}
+    instance.collectables = {}
 
     instance.boundaries = { width = 2000, top_limit = -1000, bottom_limit = 1000 }
     instance.ground_y = 500
@@ -61,12 +63,28 @@ function BaseLevel:spawnTransition(x, y, w, h, target_level, to_x, to_y)
     table.insert(self.events, trans)
 end
 
+function BaseLevel:spawnCollectable(x, y, type, value)
+    local collectable = Collectable:new(x, y, type, value)
+    table.insert(self.collectables, collectable)
+end
+
 -- === СПІЛЬНА ЛОГІКА ===
 function BaseLevel:update(dt, player, game_ref)
     -- Оновлення NPC та подій
     for _, npc in ipairs(self.npcs) do npc:update(dt, player) end
     for _, event in ipairs(self.events) do
         if event:check_collision(player) then event:trigger(game_ref, player) end
+    end
+
+    for _, col in ipairs(self.collectables) do
+        -- Додаємо перевірку col.check_collision на існування
+        if not col.is_collected and col.check_collision and col:check_collision(player) then
+            local p = col:collect() or 0
+            if game_ref then
+                game_ref.score = game_ref.score + p
+                print("Score: " .. game_ref.score)
+            end
+        end
     end
 
     -- Оновлення платформ
@@ -125,6 +143,12 @@ function BaseLevel:isPlayerOnPlatform(player, platform)
            (player.y + player.height) <= platform.y + 15
 end
 
+function BaseLevel:resetEvents()
+    for _, event in ipairs(self.events) do
+        event.active = true
+    end
+end
+
 function BaseLevel:draw()
     -- Земля
     love.graphics.setColor(0, 0.5, 0)
@@ -159,6 +183,11 @@ function BaseLevel:draw()
 
     for _, npc in ipairs(self.npcs) do npc:draw() end
     for _, event in ipairs(self.events) do event:draw() end
+
+    -- Collectables
+    for _, col in ipairs(self.collectables) do
+        col:draw()
+    end
 end
 
 return BaseLevel

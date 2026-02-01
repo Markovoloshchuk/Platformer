@@ -265,7 +265,6 @@ function Player.keypressed(key, scancode)
     if key == "space" and Player.coyote_timer > 0 then
         Player.jump()
         local random_pitch = love.math.random(0.7, 1.0)
-        Sounds.play("jump", 0.2, random_pitch)
     end
 end
 
@@ -284,6 +283,7 @@ function Player.gamepadpressed(button)
 end
 
 function Player.jump()
+    Sounds.play("jump", 0.2, random_pitch)
     Player.y_velocity = Player.jump_force
     Player.coyote_timer = 0
 end

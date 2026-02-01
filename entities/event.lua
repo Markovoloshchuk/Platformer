@@ -23,8 +23,8 @@ function Event:check_collision(player)
 end
 
 function Event:draw()
-    --love.graphics.setColor(1, 0, 0, 0.2)
-    --love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+    love.graphics.setColor(1, 0, 0, 0.2)
+    love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
 end
 
 return Event
