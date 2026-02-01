@@ -1,4 +1,5 @@
 local utf8 = require("utf8")
+local Sounds = require("libraries.sounds")
 
 local Dialogue = {}
 
@@ -8,82 +9,86 @@ local Dialogue = {}
 
 local dialog_window = {}
 local texts = {}
-local target_text = ""
 local i = 1
 local charsToShow = 0
+local totalCharsInSlide = 0 -- Загальна кількість символів у поточному слайді
 local timer = 0
 local typingSpeed = 0.04
 local is_printing = false
-local is_upper = false
+local sound, volume, pitch, is_repeatative = nil, nil, nil, true
+
+
+-- Словник кольорів
+local colorPalette = {
+    ["0"] = {1, 1, 1},       -- Білий (стандарт)
+    ["1"] = {1, 0.2, 0.2},   -- Червоний
+    ["2"] = {0.2, 1, 0.2},   -- Зелений
+    ["3"] = {0.2, 0.6, 1},   -- Блакитний
+    ["4"] = {1, 0.8, 0.2},   -- Жовтий
+    ["5"] = {1, 0, 1},       -- Пурпурний
+}
+
+-- Таблиця оброблених вузлів для поточного слайду
+local current_nodes = {}
 
 -- =================================================
 -- ПУБЛІЧНІ ЗМІННІ
 -- =================================================
 
 Dialogue.isActive = false 
-Dialogue.gameFont = 24
+Dialogue.gameFont = love.graphics.newFont(24)
 
 -- =================================================
 -- ЛОКАЛЬНІ ДОПОМІЖНІ ФУНКЦІЇ
 -- =================================================
 
-local function wrapText(text, limit, font)
-    limit = limit or 600
-    font = font or gameFont
-
-    local words = {}
-    for word in text:gmatch("[^ ]+") do
-        table.insert(words, word)
-    end
-
-    local current_line_width = 0
-    local final_text = ""
+-- Парсер: розбиває рядок на вузли за тегами /цифра
+local function parseToNodes(input_text)
+    local nodes = {}
+    -- Якщо текст не починається з тегу, додаємо стандартний білий
+    local formatted = input_text:find("^/") and input_text or ("/0" .. input_text)
     
-    -- is_upper = false -- Можна розкоментувати, якщо треба скидати капс на кожному слайді
+    for color_idx, txt in formatted:gmatch("/(%d)([^/]+)") do
+        table.insert(nodes, {
+            text = txt,
+            color = colorPalette[color_idx] or colorPalette["0"]
+        })
+    end
+    return nodes
+end
 
-    for _, word in ipairs(words) do
-        -- Обробка тегів /u (UPPERCASE)
-        if word:find("/u") then
-            if not is_upper then
-                word = word:gsub("/u", "")
-                is_upper = true
-            else
-                word = word:gsub("/u", "")
-                is_upper = false
+-- Wrapper: розраховує координати для кожного слова
+local function wrapNodes(nodes, limit)
+    local wrapped = {}
+    local cursor_x = 0
+    local cursor_y = 0
+    local line_height = gameFont:getHeight() * 1.2
+    local total_len = 0
+
+    for _, node in ipairs(nodes) do
+        -- Розбиваємо на слова, зберігаючи пробіли
+        for word in node.text:gmatch("%S+%s*") do
+            local word_width = gameFont:getWidth(word)
+            local word_len = utf8.len(word)
+
+            if cursor_x + word_width > limit then
+                cursor_x = 0
+                cursor_y = cursor_y + line_height
             end
-        end
-        
-        -- Обробка тегів /+ (сміття)
-        if word:find("%/%+") then
-            word = word:gsub("%/%+", "")
-        end
 
-        if is_upper then
-            word = string.upper(word)
-        end
-
-        local word_width = font:getWidth(word)
-        local space_width = font:getWidth(" ")
-
-        if current_line_width + word_width > limit then
-            if final_text == "" then
-                final_text = word
-            else 
-                final_text = final_text .. "\n" .. word
-            end
-            current_line_width = word_width
-        else
-            if final_text ~= "" then
-                final_text = final_text .. " " .. word
-                current_line_width = current_line_width + space_width + word_width
-            else
-                final_text = word
-                current_line_width = word_width
-            end
+            table.insert(wrapped, {
+                text = word,
+                color = node.color,
+                x = cursor_x,
+                y = cursor_y,
+                len = word_len
+            })
+            
+            cursor_x = cursor_x + word_width
+            total_len = total_len + word_len
         end
     end
-
-    return final_text
+    return wrapped, total_len
 end
 
 -- =================================================
@@ -96,7 +101,6 @@ function Dialogue.load()
     
     local screen_width = love.graphics.getWidth()
     local screen_height = love.graphics.getHeight()
-    
     local d_width = screen_width - 100
     local d_height = 200
     
@@ -105,42 +109,41 @@ function Dialogue.load()
         height = d_height,
         x = (screen_width - d_width) / 2,
         y = screen_height - d_height - 50,
-        color = {0, 0, 0, 0.8},
-        textColor = {1, 1, 1, 1}
+        bgColor = {0, 0, 0, 0.8},
+        borderColor = {1, 1, 1, 0.3}
     }
 end
 
-function Dialogue.start(texts_array)
-    if type(texts_array) ~= "table" then 
-        print("Error: Dialogue.start очікує таблицю!") 
-        return 
-    end
+function Dialogue.start(texts_array, soundName, volumeLevel, pitchLevel, repeatative)
+    if type(texts_array) ~= "table" or #texts_array == 0 then return end
 
     texts = texts_array
     i = 1
-    is_upper = false
     
-    target_text = wrapText(texts[i], dialog_window.width - 40, gameFont)
+    local raw_nodes = parseToNodes(texts[i])
+    current_nodes, totalCharsInSlide = wrapNodes(raw_nodes, dialog_window.width - 40)
     
     charsToShow = 0
     timer = 0
     is_printing = true
+    sound = soundName 
+    volume = volumeLevel 
+    pitch = pitchLevel
+    is_repeatative = repeatative
     Dialogue.isActive = true
 end
 
 function Dialogue.update(dt)
-    if not Dialogue.isActive then return end
+    if not Dialogue.isActive or not is_printing then return end
 
     timer = timer + dt
-    
-    if is_printing then
-        if timer > typingSpeed then
-            timer = timer - typingSpeed
-            if charsToShow < utf8.len(target_text) then
-                charsToShow = charsToShow + 1
-            else
-                is_printing = false
-            end
+    if timer > typingSpeed then
+        timer = timer - typingSpeed
+        if charsToShow < totalCharsInSlide then
+            if sound ~= nil and is_repeatative then Sounds.play(sound, volume, pitch) end
+            charsToShow = charsToShow + 1
+        else
+            is_printing = false
         end
     end
 end
@@ -148,30 +151,37 @@ end
 function Dialogue.draw()
     if not Dialogue.isActive then return end
 
-    -- Фон
-    love.graphics.setColor(dialog_window.color)
-    love.graphics.rectangle("fill", dialog_window.x, dialog_window.y, dialog_window.width, dialog_window.height, 10, 10)
+    -- Малюємо вікно
+    love.graphics.setColor(dialog_window.bgColor)
+    love.graphics.rectangle("fill", dialog_window.x, dialog_window.y, dialog_window.width, dialog_window.height, 10)
+    love.graphics.setColor(dialog_window.borderColor)
+    love.graphics.rectangle("line", dialog_window.x, dialog_window.y, dialog_window.width, dialog_window.height, 10)
 
-    -- Текст
-    love.graphics.setColor(dialog_window.textColor)
     love.graphics.setFont(gameFont)
 
-    local currentText = ""
-    if is_printing then
-        local byteOffset = utf8.offset(target_text, charsToShow + 1)
-        if byteOffset then
-            currentText = string.sub(target_text, 1, byteOffset - 1)
-        else
-            currentText = target_text
-        end
-    else
-        currentText = target_text
-    end
+    -- Малюємо токени по літерах
+    local printed_so_far = 0
+    for _, node in ipairs(current_nodes) do
+        if printed_so_far < charsToShow then
+            local remaining = charsToShow - printed_so_far
+            local display_count = math.min(node.len, remaining)
+            
+            -- Отримуємо частину тексту слова
+            local byteOffset = utf8.offset(node.text, display_count + 1)
+            local part = node.text:sub(1, byteOffset and byteOffset - 1 or #node.text)
 
-    love.graphics.print(currentText, dialog_window.x + 20, dialog_window.y + 20)
+            love.graphics.setColor(node.color)
+            love.graphics.print(part, dialog_window.x + 20 + node.x, dialog_window.y + 20 + node.y)
+            
+            printed_so_far = printed_so_far + node.len
+        else
+            break -- Далі літери ще не "надруковані"
+        end
+    end
     
-    -- Індикатор продовження (блимаюча стрілочка, якщо текст дописався)
+    -- Стрілочка готовності
     if not is_printing then
+        love.graphics.setColor(1, 1, 1, math.abs(math.sin(love.timer.getTime()*5)))
         love.graphics.print(">", dialog_window.x + dialog_window.width - 30, dialog_window.y + dialog_window.height - 40)
     end
 
@@ -181,20 +191,18 @@ end
 function Dialogue.keypressed(key)
     if not Dialogue.isActive then return end
 
-    -- ОНОВЛЕНО: Тепер реагує на Z, Space (Геймпад A) та Enter (Return)
+
     if key == "z" or key == "space" or key == "return" then
         if is_printing then
-            -- Пропустити друк
             is_printing = false
-            charsToShow = utf8.len(target_text)
+            charsToShow = totalCharsInSlide
         else
-            -- Наступний слайд
             if texts[i+1] == nil then
                 Dialogue.isActive = false
-                target_text = ""
             else
                 i = i + 1
-                target_text = wrapText(texts[i], dialog_window.width - 40, gameFont)
+                local raw_nodes = parseToNodes(texts[i])
+                current_nodes, totalCharsInSlide = wrapNodes(raw_nodes, dialog_window.width - 40)
                 charsToShow = 0
                 timer = 0
                 is_printing = true

@@ -1,4 +1,5 @@
--- entities/player.lua
+Sounds = require("libraries.sounds")
+
 local Player = {}
 
 function Player.load(x, y)
@@ -109,6 +110,8 @@ function Player.load(x, y)
     -- Coyote Time
     Player.coyote_duration = 0.15
     Player.coyote_timer = 0
+
+    Sounds.load()
 end
 
 function Player.update(dt, levelData, game_ref)
@@ -221,8 +224,13 @@ end
 
             print("Player died. Respawn at " .. string.format("%.0f", respawn_x) .. "x, " .. string.format("%.0f", respawn_y) .. "y")
 
+            local random_pitch = love.math.random(0.9, 1.2)
+            Sounds.play("damage", 0.8, random_pitch)
+
             Player.x = respawn_x
             Player.y = respawn_y
+            Player.active_keys.left = false
+            Player.active_keys.right = false
             Player.y_velocity = 0
             
             -- (Опціонально) Ефект тряски екрану або звук
@@ -256,6 +264,8 @@ function Player.keypressed(key, scancode)
     -- Стрибок (можна по key, бо space всюди однаковий)
     if key == "space" and Player.coyote_timer > 0 then
         Player.jump()
+        local random_pitch = love.math.random(0.7, 1.0)
+        Sounds.play("jump", 0.2, random_pitch)
     end
 end
 

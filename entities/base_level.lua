@@ -51,8 +51,8 @@ function BaseLevel:spawnSpike(x, y, w, h)
     table.insert(self.spikes, {x = x, y = y, width = w or 50, height = h or 50})
 end
 
-function BaseLevel:spawnNPC(x, y, dialogue)
-    local npc = NPC.new(x, y, dialogue)
+function BaseLevel:spawnNPC(x, y, dialogue, conf)
+    local npc = NPC.new(x, y, dialogue, conf or {})
     table.insert(self.npcs, npc)
 end
 
@@ -127,7 +127,7 @@ end
 
 function BaseLevel:draw()
     -- Земля
-    love.graphics.setColor(0, 0.8, 0)
+    love.graphics.setColor(0, 0.5, 0)
     love.graphics.rectangle("fill", 0, self.ground_y, self.boundaries.width, 200)
 
     --[[

@@ -31,9 +31,9 @@ function Level2.load()
     level:spawnSpike(950, 500, 50, 700)
     
     -- NPCs
-    level:spawnNPC(225, 350, {"What a pricky path. I'm not sure it is possible to go through it."})
+    level:spawnNPC(225, 350, {"What a /4pricky path. /0I'm not sure it is possible to go through it."})
     level:spawnNPC(100, 440, {
-        "I wonder, where could I go from here...",
+        "I wonder, where could I go /4from here /0...",
         "67"
     })
     level:spawnNPC(675, -350, {
@@ -43,14 +43,17 @@ function Level2.load()
         "Siiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiix Seveeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeen!",
         "SIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIX SEVEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEN!",
         "Six seven on a Merry X-mas",
-        "Now I have a proposal.",
-        "Authentic factual responce or mischievous challenge?",
+        "Now I have a /1proposal.",
+        "/2Authentic factual responce /0or /1mischievous challenge?",
         "...",
         "What's with that unresponsivness?",
         "Well, I will take it as a dare.",
         "Go jump off the edge. To the right, of course.",
-        "Muhahahaha~"
-    })
+        "/4Muhahahaha~"
+    }, {"speakDinner", 0.1, 1.3, true})
+    level:spawnNPC(400, -250, {
+        "/1no"
+    }, {"no", 3.0, 1, false})
 
     -- Transitions
     level:spawnTransition(0, -100, 10, 700, 1, 900, 450)

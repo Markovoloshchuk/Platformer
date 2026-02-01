@@ -6,11 +6,16 @@ local Camera = require("entities.camera")
 local Level1 = require("levels.level_1") 
 local Level2 = require("levels.level_2") 
 local Dialogue = require("libraries.dialogue")
+local Sounds = require("libraries.sounds")
 
 function Game.load()
     Dialogue.load()
     local gameFont = love.graphics.newFont(24)
     love.graphics.setFont(gameFont)
+
+    Sounds.load()
+    Sounds.library.chillMusic:setVolume(0.1)
+    Sounds.playMusic("chillMusic")
 
     Game.transition = {
         active = false,      -- is transition active
@@ -109,7 +114,7 @@ function Game.update(dt)
 end
 
 function Game.draw()
-    love.graphics.setBackgroundColor(0.4, 0.6, 1)
+    love.graphics.setBackgroundColor(0.2, 0.3, 0.5)
 
     Camera.set()
     Game.current_level:draw() -- Малює платформи, шипи і NPC

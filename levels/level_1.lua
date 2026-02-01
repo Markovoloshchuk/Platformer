@@ -40,10 +40,13 @@ function Level1.load()
     level:spawnSpike(600, -200, 100, 10)
     
     -- NPCs
-    level:spawnNPC(200, 290, {"Welcome to Level 1", "Don't die!"})
+    level:spawnNPC(200, 290, {"Welcome to /0Level 1 /0", "Don't die!"}, {"speakDinner", 0.8, 1.0, false})
     level:spawnNPC(700, 440, {
-        "Go right into the red zone!",
-        "Worry not, it will just traverse you into the next level"
+        "Go right into the /1red zone!",
+        "Worry not, it will...",
+        "Oh wait, where is it?",
+        "...",
+        "Well, nevermind, just go to the right to traverse into the /4new location!"
     })
 
     -- Transitions
