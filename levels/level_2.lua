@@ -56,7 +56,7 @@ function Level2.load()
     }, {"no", 3.0, 1, false})
 
     -- Transitions
-    level:spawnTransition(0, -100, 10, 700, 1, 900, 450)
+    level:spawnTransition(0, -100, 10, 700, 1, 900)
 
     return level
 end

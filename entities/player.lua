@@ -2,12 +2,21 @@ Sounds = require("libraries.sounds")
 
 local Player = {}
 
-function Player.load(x, y)
+function Player.load(x, y, max_breads, breads)
     Player.x = x
     Player.y = y
     Player.width = 50
     Player.height = 50
     Player.speed = 400
+
+    Player.max_breads = max_breads or 1
+    Player.breads = breads or 1
+    Player.invincibility_timer = 0
+    Player.invincibility_duration = 1
+
+    Player.red = 1
+    Player.green = 0
+    Player.blue = 0
 
     Player.active_keys = {
         left = love.keyboard.isScancodeDown("a"),
@@ -89,7 +98,7 @@ function Player.load(x, y)
     local triangles = love.math.triangulate(outline)
     
     local meshVertices = {}
-    local r, g, b, a = 1, 0, 0, 1 -- Червоний
+    local r, g, b, a = 1, 1, 1, 1 -- Червоний
 
     for _, tri in ipairs(triangles) do
         table.insert(meshVertices, {tri[1], tri[2], 0, 0, r, g, b, a})
@@ -115,6 +124,10 @@ function Player.load(x, y)
 end
 
 function Player.update(dt, levelData, game_ref)
+    if Player.invincibility_timer > 0 then
+        Player.invincibility_timer = Player.invincibility_timer - dt
+    end
+
     -- === 1. INPUT ===
     local input_strength = 0
 
@@ -219,21 +232,7 @@ end
            Player.y + Player.height > spike_top then
             
             -- Респаун
-            local respawn_x = game_ref.respawn_point.x or 50
-            local respawn_y = game_ref.respawn_point.y or 450
-
-            print("Player died. Respawn at " .. string.format("%.0f", respawn_x) .. "x, " .. string.format("%.0f", respawn_y) .. "y")
-
-            local random_pitch = love.math.random(0.9, 1.2)
-            Sounds.play("damage", 0.8, random_pitch)
-
-            Player.x = respawn_x
-            Player.y = respawn_y
-            Player.active_keys.left = false
-            Player.active_keys.right = false
-            Player.y_velocity = 0
-            
-            -- (Опціонально) Ефект тряски екрану або звук
+            Player.take_damage(game_ref)
         end
     end
 
@@ -246,8 +245,14 @@ end
 end
 
 function Player.draw()
-    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.setColor(Player.red, Player.green, Player.blue, 1)
     love.graphics.draw(Player.sprite, Player.x, Player.y)
+    love.graphics.setColor(0.8, 0.5, 0)
+    if Player.breads ~= 0 then
+        love.graphics.rectangle("fill", Player.x + 10, Player.y + 30, Player.width - 20, Player.height - 40)
+    else 
+        return
+    end
 end
 
 function Player.keypressed(key, scancode)
@@ -283,9 +288,55 @@ function Player.gamepadpressed(button)
 end
 
 function Player.jump()
+    local random_pitch = math.random(0.8, 1.2) 
     Sounds.play("jump", 0.2, random_pitch)
     Player.y_velocity = Player.jump_force
     Player.coyote_timer = 0
+end
+
+function Player.take_damage(game_ref)
+    if Player.invincibility_timer > 0 then
+        return
+    end
+
+    if Player.breads > 0 then
+        Player.breads = Player.breads - 1
+        Player.invincibility_timer = Player.invincibility_duration
+
+        Player.y_velocity = -800
+        Sounds.play("damage", 1.0, 1.0)
+        game_ref.start_hit_stop(0.2)
+    else
+        Player.die(game_ref)
+    end
+end
+
+function Player.die(game_ref)
+    if game_ref.transition.active then return end
+
+    game_ref.breads = game_ref.max_breads
+    local respawn_x = game_ref.respawn_point.x or 50
+    local respawn_y = game_ref.respawn_point.y or 450
+    local level = game_ref.respawn_point.level
+    local respawn = true
+    
+    print("Player died. Respawn at level " .. level .. " - " .. string.format("%.0f", respawn_x) .. "x, " .. string.format("%.0f", respawn_y) .. "y")
+
+    local random_pitch = (love.math.random(1, 20) / 100) + 0.9
+    Sounds.play("hurt1", 0.8, random_pitch)
+    Sounds.play("damage", 0.8, random_pitch)
+
+    Player.active_keys.left = false
+    Player.active_keys.right = false
+    Player.y_velocity = 0
+    game_ref.switchLevel(level, respawn_x, respawn_y, respawn)
+    
+end
+
+function Player.set_color(red, green, blue)
+    Player.red = red
+    Player.green = green
+    Player.blue = blue
 end
 
 return Player

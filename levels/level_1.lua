@@ -50,10 +50,13 @@ function Level1.load()
     })
 
     -- Transitions
-    level:spawnTransition(990, -700, 10, 1200, 2, 50, 450)
+    level:spawnTransition(990, -700, 10, 1200, 2, 50)
 
     -- Collectables
-    level:spawnCollectable(850, 120, "empty", 1) -- Для тесту помилки
+    level:spawnCollectable(850, 120, "empty", 5)
+    level:spawnCollectable(150, 300, "empty", 5)
+    level:spawnCollectable(250, 300, "empty", 5)
+    level:spawnCollectable(375, 200, "empty", 5)
 
     return level
 end

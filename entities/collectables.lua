@@ -17,6 +17,11 @@ function Collectables:new(x, y, type, value)
 end
 
 function Collectables:collect()
+    if self.type == "empty" then
+        Sounds.play("collect", 0.4, 1.1)
+        print("Collectable of Empty type was collected!")
+    end
+
     self.is_collected = true
     return self.value
 end

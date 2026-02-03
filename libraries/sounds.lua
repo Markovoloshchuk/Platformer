@@ -8,6 +8,8 @@ function Sounds.load()
     Sounds.library.damage = love.audio.newSource("assets/sfx/damage.wav", "static")
     Sounds.library.jump = love.audio.newSource("assets/sfx/jump.wav", "static")
     Sounds.library.speakDinner = love.audio.newSource("assets/sfx/speakDinner.wav", "static")
+    Sounds.library.collect = love.audio.newSource("assets/sfx/collect.wav", "static")
+    Sounds.library.hurt1 = love.audio.newSource("assets/sfx/hurt1.wav", "static")
     Sounds.library.no = love.audio.newSource("assets/sfx/no.mp3", "static")
     
     -- Музика (stream)
