@@ -17,6 +17,7 @@ function Player.load(x, y, max_breads, breads)
     Player.red = 1
     Player.green = 0
     Player.blue = 0
+    Player.opacity = 1
 
     Player.active_keys = {
         left = love.keyboard.isScancodeDown("a"),
@@ -126,6 +127,11 @@ end
 function Player.update(dt, levelData, game_ref)
     if Player.invincibility_timer > 0 then
         Player.invincibility_timer = Player.invincibility_timer - dt
+    end
+
+    if love.keyboard.isDown("space") and Player.coyote_timer > 0 then
+        Player.jump()
+        Player.is_on_ground = false
     end
 
     -- === 1. INPUT ===
@@ -244,8 +250,13 @@ end
     end
 end
 
-function Player.draw()
-    love.graphics.setColor(Player.red, Player.green, Player.blue, 1)
+function Player.draw(game_ref)
+    if Player.invincibility_timer > 0 and game_ref.freeze_timer < 0 then
+        Player.opacity = 0.5
+    else
+        Player.opacity = 1
+    end
+    love.graphics.setColor(Player.red, Player.green, Player.blue, Player.opacity)
     love.graphics.draw(Player.sprite, Player.x, Player.y)
     love.graphics.setColor(0.8, 0.5, 0)
     if Player.breads ~= 0 then
@@ -266,11 +277,6 @@ function Player.keypressed(key, scancode)
         Player.active_keys.left = true
     end
 
-    -- Стрибок (можна по key, бо space всюди однаковий)
-    if key == "space" and Player.coyote_timer > 0 then
-        Player.jump()
-        local random_pitch = love.math.random(0.7, 1.0)
-    end
 end
 
 function Player.keyreleased(key, scancode)

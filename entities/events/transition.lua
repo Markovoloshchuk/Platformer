@@ -20,7 +20,7 @@ function Transition:trigger(game_ref, player)
     if self.active then
         print("Transition triggered! Going to level " .. self.target_level)
 
-        game_ref.switchLevel(self.target_level, self.target_x, self.target_y)
+        game_ref.switchLevel(self.target_level, self.target_x, self.target_y, false)
 
         self.active = false
     end

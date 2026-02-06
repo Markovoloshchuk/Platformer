@@ -5,12 +5,18 @@
     local Camera = require("entities.camera")
     local Level1 = require("levels.level_1") 
     local Level2 = require("levels.level_2") 
+    local Level3 = require("levels.level_3") 
     local Dialogue = require("libraries.dialogue")
     local Sounds = require("libraries.sounds")
+    local Collectables = require("entities.collectables")
 
     -- For collectables
     Game.loaded_levels = {}
     Game.score = 0
+
+    Game.draw_statistics = false
+
+    Game.l1_mp1_active = false
 
     function Game.load()
         Dialogue.load()
@@ -21,6 +27,8 @@
         Sounds.library.chillMusic:setVolume(0.1)
         Sounds.library.chillMusic:setLooping(true)
         Sounds.playMusic("chillMusic")
+
+        Collectables.load()
 
         Game.transition = {
             active = false,      -- is transition active
@@ -35,7 +43,7 @@
         Game.respawn_point = {level = 1, x = 50, y = 450}
         Game.freeze_timer = 0
 
-        Game.max_breads = 1
+        Game.max_breads = 3
         Game.breads = Game.max_breads or 1
 
         local w, h = love.graphics.getDimensions()
@@ -49,7 +57,7 @@
 
         Game.gradientMesh = love.graphics.newMesh(vertices, "fan")
 
-        Game.changeLevelInstant(1, 50, 450)
+        Game.changeLevelInstant(3, 50, 450)
     end
 
     function Game.switchLevel(number, x, y, respawn)
@@ -82,9 +90,11 @@
 
         if not Game.loaded_levels[number] then
             if number == 1 then
-                Game.loaded_levels[number] = Level1.load()
+                Game.loaded_levels[number] = Level1.load(Game)
             elseif number == 2 then
-                Game.loaded_levels[number] = Level2.load()
+                Game.loaded_levels[number] = Level2.load(Game)
+            elseif number == 3 then
+                Game.loaded_levels[number] = Level3.load(Game)
             end
             print("First time for level " .. number)
         else
@@ -105,8 +115,19 @@
         Game.freeze_timer = duration
     end
 
-    function Game.update(dt)   
+    function Game.find_object(obj_name)
+        if obj_name == "player" then return Player end
         
+        local level_objects = {}
+        Game.current_level.tableConcat(level_objects)
+
+        for _, object in ipairs(level_objects) do
+            if obj_name == object.name then return object end
+        end
+    end
+
+    function Game.update(dt)   
+        -- Shining effect of player on hit
         if Game.freeze_timer > 0 then
             local r = math.random(30, 100) / 100
             local g = math.random(30, 100) / 100
@@ -117,10 +138,12 @@
             return
         end
 
+        -- Freeze game on hit
         if Game.freeze_timer <= 0 then
             Player.set_color(1, 0, 0)
         end
 
+        -- Transition to the next location
         if Game.transition.active then
 
             if Game.transition.state == "out" then
@@ -148,6 +171,7 @@
                 
         end
 
+        -- Update player when not transition
         if not Game.transition.active and Game.transition.alpha < 0.2 then
             Player.update(dt, Game.current_level, Game)
         end
@@ -168,16 +192,20 @@
 
         Camera.set()
         Game.current_level:draw() -- Малює платформи, шипи і NPC
-        Player.draw()
+        Player.draw(Game)
         Camera.unset()
 
-        love.graphics.setColor(1, 1, 0)
-        love.graphics.print("Score: " .. Game.score, 10, 40)
+        if Game.draw_statistics == true then
+            love.graphics.setColor(1, 1, 0)
+            love.graphics.print("Score: " .. Game.score, 10, 40)
 
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.print("Coords: " .. string.format("%.0f", Player.x) .. ", " .. string.format("%.0f", Player.y), 10, 0)
-        love.graphics.print("Level: " .. (Game.levelNumber or 1), 10, 20)
-        love.graphics.print("Breads: " .. (Player.breads), 10, 60)
+        
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.print("Coords: " .. string.format("%.0f", Player.x) .. ", " .. string.format("%.0f", Player.y), 10, 0)
+            love.graphics.print("Level: " .. (Game.levelNumber or 1), 10, 20)
+            love.graphics.print("Breads: " .. (Player.breads), 10, 60)
+            love.graphics.print("Y velocity: " .. (Player.y_velocity), 10, 80)
+        end
         
         Dialogue.draw()
 

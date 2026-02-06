@@ -10,7 +10,7 @@ NPC.__index = NPC
 local standart_font
 local sign_font
 
-function NPC.new(x, y, texts_array, conf)
+function NPC.new(name, x, y, texts_array, conf)
     -- Ініціалізуємо шрифти тільки тоді, коли створюється перший NPC
     -- Це гарантує, що графічна система вже працює
     if not standart_font then
@@ -27,6 +27,7 @@ function NPC.new(x, y, texts_array, conf)
 
     local instance = setmetatable({}, NPC)
 
+    instance.name = name
     instance.x = x
     instance.y = y
     instance.width = 50
@@ -44,7 +45,7 @@ function NPC.new(x, y, texts_array, conf)
 end
 
 function NPC:update(dt, player)
-    local reach_distance = 30
+    local reach_distance = 10
     if player.x < self.x + self.width + reach_distance and
        player.x + player.width > self.x - reach_distance and
        player.y < self.y + self.height + reach_distance and
