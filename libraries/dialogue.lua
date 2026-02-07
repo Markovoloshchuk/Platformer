@@ -36,6 +36,7 @@ local current_nodes = {}
 -- =================================================
 
 Dialogue.isActive = false 
+Dialogue.is_done = false
 Dialogue.gameFont = love.graphics.newFont(24)
 
 -- =================================================
@@ -115,6 +116,7 @@ function Dialogue.load()
 end
 
 function Dialogue.start(texts_array, soundName, volumeLevel, pitchLevel, repeatative)
+    Dialogue.is_done = false
     if type(texts_array) ~= "table" or #texts_array == 0 then return end
 
     texts = texts_array
@@ -126,10 +128,10 @@ function Dialogue.start(texts_array, soundName, volumeLevel, pitchLevel, repeata
     charsToShow = 0
     timer = 0
     is_printing = true
-    sound = soundName 
-    volume = volumeLevel 
-    pitch = pitchLevel
-    is_repeatative = repeatative
+    sound = soundName or nil
+    volume = volumeLevel or 1.0
+    pitch = pitchLevel or 1.0
+    is_repeatative = repeatative or false
     Dialogue.isActive = true
 end
 
@@ -199,6 +201,7 @@ function Dialogue.keypressed(key)
         else
             if texts[i+1] == nil then
                 Dialogue.isActive = false
+                Dialogue.is_done = true
             else
                 i = i + 1
                 local raw_nodes = parseToNodes(texts[i])

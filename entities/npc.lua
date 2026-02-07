@@ -77,7 +77,6 @@ end
 function NPC:interact()
     if self.is_player_near then
         if not self.is_repeatative then Sounds.play(self.sound, self.volume, self.pitch) end
-        print(self.is_repeatative)
         Dialogue.start(self.text, self.sound, self.volume, self.pitch, self.is_repeatative)
     end
 end

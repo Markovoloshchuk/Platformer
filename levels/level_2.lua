@@ -32,26 +32,17 @@ function Level2.load(game_ref)
     level:spawnSpike("s15", 950, 500, 50, 700)
     
     -- NPCs
-    level:spawnNPC("npc1", 225, 350, {"What a /4pricky path. /0I'm not sure it is possible to go through it."})
+    level:spawnNPC("npc1", 225, 350, {"Usually spikes can be harmful to your skin. Hope you've brought up some breads with you."})
     level:spawnNPC("npc2", 100, 440, {
-        "I wonder, where could I go /4from here /0...",
-        "67"
+        "I wonder, where could I go /4from here /0..."
     })
     level:spawnNPC("npc3", 675, -350, {
-        "Wow, congrats! You really did it, huh?",
-        "As a prize, I will sing you a song!",
-        "Siiiiiiiix seveeeeeeeeeeeeeeeeeeeeeeeeeeeeeeen",
-        "Siiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiix Seveeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeen!",
-        "SIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIX SEVEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEN!",
-        "Six seven on a Merry X-mas",
-        "Now I have a /1proposal.",
-        "/2Authentic factual responce /0or /1mischievous challenge?",
-        "...",
-        "What's with that unresponsivness?",
-        "Well, I will take it as a dare.",
-        "Go jump off the edge. To the right, of course.",
-        "/4Muhahahaha~"
-    }, {"speakDinner", 0.1, 1.3, true})
+        "Wow, congrats! You really did it!",
+        "I expect you have already picked up that strange girl-like item. Wanna know what it do?",
+        "Except the normal collectables that gives you score, those ones work as a key.",
+        "The key you've picked up activated an elevator in previous level, the other ones might do the same thing.",
+        "Beware, not all of them are safe."
+    })
     level:spawnNPC("npc4", 400, -250, {
         "/1no"
     }, {"no", 3.0, 1, false})

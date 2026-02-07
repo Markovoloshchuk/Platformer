@@ -1,7 +1,8 @@
 local Movement = {}
 
 function Movement.to_target(game_ref, obj_name, target_x, target_y, speed, dt, lvl)
-    local obj = game_ref.find_object(obj_name)
+    local obj = obj_name
+    --game_ref.find_object(obj_name)
 
     local dx = target_x - obj.x
     local dy = target_y - obj.y

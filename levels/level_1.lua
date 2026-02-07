@@ -44,11 +44,8 @@ function Level1.load(game_ref)
     -- NPCs
     level:spawnNPC("npc1", 200, 290, {"Welcome to /4Level 1 /0", "Don't die!"}, {"speakDinner", 0.8, 1.0, false})
     level:spawnNPC("npc2", 700, 440, {
-        "Go right into the /1red zone!",
-        "Worry not, it will...",
-        "Oh wait, where is it?",
-        "...",
-        "Well, nevermind, just go to the right to traverse into the /4new location!"
+        "In some areas, you can traverse trough locations.",
+        "Remember, that /4your height transfers to another location! /0That might help you get to some seemingly impossible places."
     })
 
     -- Transitions

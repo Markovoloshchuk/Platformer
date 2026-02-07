@@ -8,6 +8,7 @@ function Player.load(x, y, max_breads, breads)
     Player.width = 50
     Player.height = 50
     Player.speed = 400
+    Player.can_move = true
 
     Player.max_breads = max_breads or 1
     Player.breads = breads or 1
@@ -129,7 +130,7 @@ function Player.update(dt, levelData, game_ref)
         Player.invincibility_timer = Player.invincibility_timer - dt
     end
 
-    if love.keyboard.isDown("space") and Player.coyote_timer > 0 then
+    if love.keyboard.isDown("space") and Player.coyote_timer > 0 and Player.can_move then
         Player.jump()
         Player.is_on_ground = false
     end
@@ -137,11 +138,11 @@ function Player.update(dt, levelData, game_ref)
     -- === 1. INPUT ===
     local input_strength = 0
 
-    if Player.active_keys.right then input_strength = 1 end
-    if Player.active_keys.left then input_strength = -1 end
+    if Player.active_keys.right and Player.can_move then input_strength = 1 end
+    if Player.active_keys.left and Player.can_move then input_strength = -1 end
 
     local joysticks = love.joystick.getJoysticks()
-    if #joysticks > 0 then
+    if #joysticks > 0 and Player.can_move then
         local axisX = joysticks[1]:getGamepadAxis("leftx")
         if math.abs(axisX) > 0.2 then input_strength = axisX end
         if joysticks[1]:isGamepadDown("dpright") then input_strength = 1 end
@@ -271,9 +272,9 @@ function Player.keypressed(key, scancode)
     -- print("Key: " .. key .. " | Scancode: " .. scancode)
 
     -- Використовуємо scancode для руху (ігнорує розкладку)
-    if scancode == "d" then
+    if scancode == "d" and Player.can_move then
         Player.active_keys.right = true
-    elseif scancode == "a" then
+    elseif scancode == "a" and Player.can_move then
         Player.active_keys.left = true
     end
 
@@ -288,7 +289,7 @@ function Player.keyreleased(key, scancode)
 end
 
 function Player.gamepadpressed(button)
-    if button == "a" and Player.coyote_timer > 0 then
+    if button == "a" and Player.coyote_timer > 0 and Player.can_move then
         Player.jump()
     end
 end

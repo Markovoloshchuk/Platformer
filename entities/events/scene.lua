@@ -24,6 +24,7 @@ function Scene:new(name, x, y, w, h, lvl, queues, triggered)
     --[[ The structure of queue:
     Dialogue:      { action = "dialogue", target = nil, dialogue = {{"text"}, "sound", volume, pitch, is_repeatative} } 
     Movement:      { action = "move", target = "[obj]", x = x, y = y, speed = speed }
+    Jump:          { action = "jump", target = "player"}
     Sound:         { action = "sound", target = nil, sound = {"sound", volume, pitch}}
     Boolean        { action = "toggle", target = "[boolean]"}
     Cooldown       { action = "cooldown", target = nil, interval = interval }
@@ -32,17 +33,43 @@ function Scene:new(name, x, y, w, h, lvl, queues, triggered)
     return instance
 end
 
-function Scene:update(dt, game_ref)
-    if self.event_triggered and #self.queue > 0 then
+function Scene:update(dt, game_ref, player)
+    if self.event_triggered then
             local task = self.queue[1]
 
+            if not task then print("End of " .. self.name .. " scene.") player.can_move = true self.event_triggered = false return end
+
             if task.action == "move" then
-                local reached = Movement.to_target(task.target, task.x, task.y, task.speed, dt)
+                local target_obj
+                --[[
+                if task.target ~= "player" then
+                    target_obj 
+                end
+                ]]--
+                if task.target == "player" then target_obj = player
+                else target_obj = task.target end
+                local reached = Movement.to_target(game_ref, target_obj, task.x, task.y, task.speed, dt)
                 if reached then table.remove(self.queue, 1) end
 
+            elseif task.action == "jump" then
+                if task.target == "player" then
+                    player.jump()
+                end
+                table.remove(self.queue, 1)
+
             elseif task.action == "dialogue" then
-                Dialogue.start(self.text, self.sound, self.volume, self.pitch, self.is_repeatative)
-                if Dialogue.isActive == false then table.remove(self.queue, 1) end
+                local text = task.text
+                local sound = task.sound or nil
+                local volume = task.volume or nil
+                local pitch = task.pitch or nil
+                local is_repeatative = task.is_repeatative or nil
+                
+                if not task.start then
+                    Dialogue.start(text, sound, volume, pitch, is_repeatative)
+                    task.start = true
+                end
+                if Dialogue.is_done == true then table.remove(self.queue, 1) end
+
 
             elseif task.action == "sound" then
                 Sound.play(task.sound[1], task.sound[2], task.sound[3])
@@ -69,6 +96,7 @@ end
 
 function Scene:trigger(game_ref, player)
     if self.is_available then
+        player.can_move = false
         if self.triggered[1] == "on_touch" then
             print("On touch is triggered")
             self.event_triggered = true

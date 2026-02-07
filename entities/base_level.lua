@@ -81,7 +81,7 @@ function BaseLevel:update(dt, player, game_ref)
     -- Оновлення NPC та подій
     for _, npc in ipairs(self.npcs) do npc:update(dt, player) end
     for _, event in ipairs(self.events) do
-        event:update(dt, game_ref) if event:check_collision(player) then event:trigger(game_ref, player) end
+        event:update(dt, game_ref, player) if event:check_collision(player) then event:trigger(game_ref, player) end
     end
 
     for _, col in ipairs(self.collectables) do
@@ -169,6 +169,7 @@ function BaseLevel:move_along_moving_platform(platform, objects)
         end
     end
 
+
     for _, obj in ipairs(objects) do
         for _, lvl_obj in ipairs(level_objects) do
             if obj.name == lvl_obj.name then 
@@ -176,6 +177,19 @@ function BaseLevel:move_along_moving_platform(platform, objects)
                 lvl_obj.x = self.platforms[target_platform].x + obj.rx
                 lvl_obj.y = self.platforms[target_platform].y + obj.ry
             end
+        end
+    end
+end
+
+function BaseLevel:find_object(name)
+    local level_objects = {}
+    self:tableConcat(level_objects)
+    print(#level_objects)
+
+    for i = 1, #level_objects do
+        print(level_objects[i].name)
+        if level_objects[i].name == name then
+            return level_objects[i]
         end
     end
 end

@@ -22,7 +22,7 @@ function Event:check_collision(player)
            player.y + player.height > self.y
 end
 
-function Event:update(dt, game_ref)
+function Event:update(dt, game_ref, player)
     
 end
 
